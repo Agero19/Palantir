@@ -1,0 +1,39 @@
+# Build artifacts
+/build/*.o           # Object files generated during compilation
+/build/*.so          # Shared library files (Linux)
+/build/*.dll         # Dynamic library files (Windows)
+/build/*.exe         # Executable files
+/build/*.out         # Output binary files
+
+# Logs
+/logs/
+/*.log              # Log files (agent.log, server.log, etc.)
+
+# Configuration files
+/config/config.json # User-specific configuration files
+
+# Debugging files
+/*.core             # Core dumps from crashes
+
+# Compiled libraries
+*.a                 # Static libraries
+
+# IDE/Editor specific files
+/.vscode/           # VSCode workspace settings
+/.idea/             # JetBrains IDEs (CLion, etc.)
+*.DS_Store          # macOS specific hidden file
+
+# Makefile-specific
+/dependency/        # Temporary dependencies directory if used
+
+# SQLite Database Files
+*.db                # SQLite database files
+
+# Reports
+/reports/*.csv      # Generated CSV report files
+/reports/*.txt      # Any generated text report files
+
+# Coverage or test artifacts
+/tests/*.out        # Test output files
+/tests/*.gcda       # Code coverage data
+/tests/*.gcno       # Code coverage notes
