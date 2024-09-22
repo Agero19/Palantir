@@ -1,30 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <pthread.h>
-
-#define PORT 8080
-#define BUFFER_SIZE 1024
-
-void *handle_client(void *arg) {
-    int client_socket = *(int*)arg;
-    free(arg); // Free the dynamically allocated memory
-    char buffer[BUFFER_SIZE];
-    size_t valread;
-
-    printf("Client connected, thread ID: %p\n", (void*)pthread_self());
-
-    // Read data from client in a loop
-    while ((valread = read(client_socket, buffer, BUFFER_SIZE)) > 0) {
-        printf("Client %p: %s",(void*)pthread_self(), buffer);
-        memset(buffer, 0, sizeof(buffer));
-    }
-
-    printf("Client disconnectedm thread ID: %p\n", (void*)pthread_self());
-    return NULL;
-}
+#include "../../include/server.h"
 
 int main(void) {
     int server_fd, *new_socket;
@@ -98,4 +72,22 @@ int main(void) {
     // Close the socket
     close(server_fd);
     return EXIT_SUCCESS;
+}
+
+void *handle_client(void *arg) {
+    int client_socket = *(int*)arg;
+    free(arg); // Free the dynamically allocated memory
+    char buffer[BUFFER_SIZE];
+    size_t valread;
+
+    printf("Client connected, thread ID: %p\n", (void*)pthread_self());
+
+    // Read data from client in a loop
+    while ((valread = read(client_socket, buffer, BUFFER_SIZE)) > 0) {
+        printf("Client %p: %s",(void*)pthread_self(), buffer);
+        memset(buffer, 0, sizeof(buffer));
+    }
+
+    printf("Client disconnectedm thread ID: %p\n", (void*)pthread_self());
+    return NULL;
 }
