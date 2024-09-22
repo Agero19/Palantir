@@ -3,12 +3,31 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
+void *handle_client(void *arg) {
+    int client_socket = *(int*)arg;
+    free(arg); // Free the dynamically allocated memory
+    char buffer[BUFFER_SIZE];
+    size_t valread;
+
+    printf("Client connected, thread ID: %p\n", (void*)pthread_self());
+
+    // Read data from client in a loop
+    while ((valread = read(client_socket, buffer, BUFFER_SIZE)) > 0) {
+        printf("Client %p: %s",(void*)pthread_self(), buffer);
+        memset(buffer, 0, sizeof(buffer));
+    }
+
+    printf("Client disconnectedm thread ID: %p\n", (void*)pthread_self());
+    return NULL;
+}
+
 int main(void) {
-    int server_fd, new_socket;
+    int server_fd, *new_socket;
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
@@ -21,7 +40,6 @@ int main(void) {
     }
 
     // Set a socket options
-    
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt SO_REUSEADDR failed");
         return EXIT_FAILURE;
@@ -32,7 +50,7 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    // Setup the server adress
+    // Setup the server address
     // Set the adress family to AF_INET (IPv4)
     address.sin_family = AF_INET;
 
@@ -42,31 +60,39 @@ int main(void) {
     // Set the port number in network byte order / PORT 8080
     address.sin_port = htons(PORT);
 
+    // Bind the socket to the specified port
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("Bind failed!");
         return EXIT_FAILURE;
     }
 
     // Start listening to connections
-    if (listen(server_fd, 3) < 0) {
+    if (listen(server_fd, 10) < 0) {
         perror("listening filed");
         return EXIT_FAILURE;
     }   
     printf("Server listening on port %d\n", PORT);
 
-    // Accepting incomming connections
-    if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
-        perror("Accept failed");
-        return EXIT_FAILURE;
-    }
-    printf("Connection established\n");
+    // Main loop: accept incoming connections
+    while(1) {
+        new_socket = malloc(sizeof(int)); // Allocate memory for the new socket
+        
+        if ((*new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+            perror("Accept failed");
+            free(new_socket);
+            return EXIT_FAILURE;
+        }
 
-    //Read the data from client and print it out
-    // Declare a signed size type variable for the number of bytes read
-    size_t valread;
-    while ((valread = read(new_socket, buffer, BUFFER_SIZE)) > 0) {
-        printf("Client: %s", buffer);
-        memset(buffer, 0, sizeof(buffer));
+        //Create a new thread to handle the client
+        pthread_t thread_id;
+        if (pthread_create(&thread_id, NULL, handle_client, (void*)new_socket) != 0) {
+            perror("Failed to create a thread");
+            close(*new_socket);
+            free(new_socket);
+        }
+
+        // Detatch the thread to allow it to clean up after finishing
+        pthread_detach(thread_id);
     }
 
     // Close the socket
