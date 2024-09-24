@@ -1,5 +1,7 @@
 #include "../../include/server.h"
 
+pthread_mutex_t log_mutex;
+
 int main(void) {
     int server_fd, *new_socket;
     struct sockaddr_in address;
@@ -90,4 +92,40 @@ void *handle_client(void *arg) {
 
     printf("Client disconnectedm thread ID: %p\n", (void*)pthread_self());
     return NULL;
+}
+
+void log_message(LogLevel level, const char *format, ...) {
+    pthread_mutex_lock(&log_mutex);
+    
+    FILE *log_file = fopen("server.log", "a");
+    if (log_file == NULL) {
+        pthread_mutex_unlock(&log_mutex);
+        return;
+    }
+
+    time_t now = time(NULL);
+    char *timestamp = ctime(&now);
+    timestamp[strlen(timestamp) - 1] = '\0';
+
+    switch (level) {
+        case INFO:
+            fprintf(log_file, "[%s] [INFO] ", timestamp);
+            break;
+        case WARNING:
+            fprintf(log_file, "[%s] [WARNING] ", timestamp);
+            break;
+        case ERROR:
+            fprintf(log_file, "[%s] [ERROR] ", timestamp);
+            break;
+    }
+
+    va_list args;
+    va_start(args, format);
+    vfprintf(log_file, format, args);
+    va_end(args);
+
+    fprintf(log_file, "\n");
+    fclose(log_file);
+
+    pthread_mutex_unlock(&log_mutex);
 }
