@@ -9,11 +9,14 @@ int main(void) {
     int addrlen = sizeof(address);
     char buffer[BUFFER_SIZE] = {0};
 
+    log_message(INFO, "Server started");
+
     // Create a server file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("socket failed");
+        log_message(ERROR, "Socket failed");
         return EXIT_FAILURE;
     }
+    log_message(INFO, "Socket created");
 
     // Set a socket options
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
@@ -38,15 +41,18 @@ int main(void) {
 
     // Bind the socket to the specified port
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("Bind failed!");
+        log_message(ERROR, "Bind failed");
         return EXIT_FAILURE;
     }
+    log_message(INFO, "Socket bound to port %d", PORT);
 
     // Start listening to connections
     if (listen(server_fd, 10) < 0) {
-        perror("listening filed");
+        log_message(ERROR, "Listen failed");
         return EXIT_FAILURE;
     }   
+
+    log_message(INFO, "Listening for connections");
     printf("Server listening on port %d\n", PORT);
 
     // Main loop: accept incoming connections
@@ -54,19 +60,22 @@ int main(void) {
         new_socket = malloc(sizeof(int)); // Allocate memory for the new socket
         
         if ((*new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
-            perror("Accept failed");
+            log_message(ERROR, "Accept failed");
             free(new_socket);
             return EXIT_FAILURE;
         }
 
+        log_message(INFO, "Accepted connection from client");
+
         //Create a new thread to handle the client
         pthread_t thread_id;
         if (pthread_create(&thread_id, NULL, handle_client, (void*)new_socket) != 0) {
-            perror("Failed to create a thread");
+            log_message(ERROR, "Failed to create thread");
             close(*new_socket);
             free(new_socket);
+        } else {
+            log_message(INFO, "Thread created to handle client");
         }
-
         // Detatch the thread to allow it to clean up after finishing
         pthread_detach(thread_id);
     }
@@ -81,23 +90,28 @@ void *handle_client(void *arg) {
     free(arg); // Free the dynamically allocated memory
     char buffer[BUFFER_SIZE];
     size_t valread;
-
+    
+    log_message(INFO, "Handling client %p connection in thread", (void*)pthread_self());
     printf("Client connected, thread ID: %p\n", (void*)pthread_self());
 
     // Read data from client in a loop
     while ((valread = read(client_socket, buffer, BUFFER_SIZE)) > 0) {
-        printf("Client %p: %s",(void*)pthread_self(), buffer);
+        // printf("Client %p: %s",(void*)pthread_self(), buffer);
+        log_message(INFO, "Received from client %p: %s", (void*)pthread_self(), buffer);
         memset(buffer, 0, sizeof(buffer));
     }
-
+    
+    log_message(INFO, "Client disconnected");
     printf("Client disconnectedm thread ID: %p\n", (void*)pthread_self());
+
+    log_message(INFO, "Closed connection with client");
     return NULL;
 }
 
 void log_message(LogLevel level, const char *format, ...) {
     pthread_mutex_lock(&log_mutex);
     
-    FILE *log_file = fopen("server.log", "a");
+    FILE *log_file = fopen("/../../logs/server.log", "a");
     if (log_file == NULL) {
         pthread_mutex_unlock(&log_mutex);
         return;
