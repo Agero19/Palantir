@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <unistd.h>
 #include <mach/mach.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -8,8 +10,13 @@
 
 #define PATH "/"
 
+extern float round_to_places(float value, int places);
+
+extern float bytes_to_gb(uint64_t bytes); 
 
 extern float get_cpu_usage();
+
+extern uint64_t get_page_size();
 
 extern void get_memory_usage(uint64_t *total_mem, uint64_t *free_mem);
 
