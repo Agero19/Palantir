@@ -83,7 +83,7 @@ void get_disk_usage(const char* path, uint64_t* total_disk, uint64_t* used_disk)
 void get_network_usage(uint64_t *bytes_in, uint64_t *bytes_out) {
     FILE *fp;
     char buffer[128];
-    char iface[16];
+    //char iface[16];
     uint64_t ibytes, obytes;
 
     // Open the process with popen, executing the netstat command
