@@ -4,7 +4,9 @@
 /build/*.dll         # Dynamic library files (Windows)
 /build/*.exe         # Executable files
 /build/*.out         # Output binary files
-
+/build/
+*.o
+*.exe
 # Logs
 /logs/
 /*.log              # Log files (agent.log, server.log, etc.)

@@ -110,7 +110,8 @@ void create_resource_json(
     uint64_t total_disk, 
     uint64_t used_disk, 
     uint64_t bytes_in, 
-    uint64_t bytes_out
+    uint64_t bytes_out,
+    bool console_log
 ) {
     cJSON *root = cJSON_CreateObject();
     
@@ -152,7 +153,11 @@ void create_resource_json(
 
     // Convert JSON to string and print it
     char *json_data = cJSON_Print(root);
-    printf("JSON Data: %s\n", json_data);  // You can send this to the server or save it
+
+    if (console_log) {
+        // You can send this to the server or save it
+        printf("JSON Data: %s\n", json_data); 
+    }
 
     // Free the memory
     cJSON_Delete(root);

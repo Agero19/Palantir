@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <unistd.h>
 #include <mach/mach.h>
@@ -31,6 +32,7 @@ extern void create_resource_json(
     uint64_t total_disk, 
     uint64_t used_disk, 
     uint64_t bytes_in, 
-    uint64_t bytes_out
+    uint64_t bytes_out,
+    bool console_log
 );
 
