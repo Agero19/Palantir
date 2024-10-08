@@ -1,22 +1,21 @@
 #include "../../include/agent.h"
 
 int main(void) {
-    float cpu_usage = get_cpu_usage();
-    uint64_t total_mem = 0, free_mem = 0;
-    uint64_t total_disk = 0, used_disk = 0;
-    uint64_t bytes_in = 0, bytes_out = 0;
+    // Signal handling for clean shutdown
+    signal(SIGINT, handle_signal);
+    signal(SIGTERM, handle_signal);
 
-    get_memory_usage(&total_mem, &free_mem);
-    get_disk_usage("/", &total_disk, &used_disk);
-    get_network_usage(&bytes_in, &bytes_out);  // Capture network usage
+    // Daemonize the process
 
-    // Create JSON and print it
-    create_resource_json(cpu_usage, total_mem, free_mem, total_disk, used_disk, bytes_in, bytes_out);
+    //TODO: redirect output to file , log or send somewhere
+    daemonize();
+    printf("Agent started in background\n");
 
+    // Run the agent
+    run_agent();
 
-    return EXIT_SUCCESS;
+    return 0;
 }
-
 float bytes_to_gb(uint64_t bytes) {
     return (float)bytes / (1024.0 * 1024.0 * 1024.0);  // Convert bytes to GB
 }
@@ -163,3 +162,70 @@ void create_resource_json(
     cJSON_Delete(root);
     free(json_data);
 }
+
+void daemonize() {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        // Fork failed
+        perror("fork failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid > 0) {
+        // Exit the parent process
+        exit(EXIT_SUCCESS);
+    }
+
+    // Start a new session for the child
+    if (setsid() < 0) {
+        perror("setsid failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Change the current working directory
+    if (chdir("/") < 0) {
+        perror("chdir failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Redirect standard files to /dev/null
+    int fd = open("/dev/null", O_RDWR);
+    if (fd < 0) {
+        perror("open /dev/null failed");
+        exit(EXIT_FAILURE);
+    }
+    dup2(fd, STDIN_FILENO);
+    dup2(fd, STDOUT_FILENO);
+    dup2(fd, STDERR_FILENO);
+    close(fd);
+}
+
+void handle_signal(int signal) {
+    // If catches SIGINT or CTRL+C terminates background runtime
+    if (signal == SIGINT || signal == SIGTERM) {
+        printf("Agent shutting down\n");
+        exit(0);
+    }
+}
+
+void run_agent() {
+    while(1) {
+        // Define variables at base for each recource
+        float cpu_usage = get_cpu_usage();
+        uint64_t total_mem = 0, free_mem = 0;
+        uint64_t total_disk = 0, used_disk = 0;
+        uint64_t bytes_in = 0, bytes_out = 0;
+
+        // Call getter finctions
+        get_memory_usage(&total_mem, &free_mem);
+        get_disk_usage("/", &total_disk, &used_disk);
+        get_network_usage(&bytes_in, &bytes_out);  // Capture network usage
+
+        // Create JSON and print it
+        create_resource_json(cpu_usage, total_mem, free_mem, total_disk, used_disk, bytes_in, bytes_out, true);
+
+        // Sleep for the defined interval (e.g., 60 seconds)
+        sleep(5);
+    }
+} 
